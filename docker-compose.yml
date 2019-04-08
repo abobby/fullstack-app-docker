@@ -1,0 +1,70 @@
+version: '3'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: "./dockerfiles/backend.dockerfile"
+    ports:
+      - "8080:80"
+    volumes:
+      - "./src/backend:/var/www/html"
+    depends_on:
+      - mongodb
+      - mysqldb
+      - apibox
+    networks: 
+      mynetwork:
+        aliases:
+          - local.myapp.com
+
+  mongodb:
+    image: mongodb:latest
+    ports:
+      - "27018:27017"
+    volumes:
+      - "./data/nosql:/data/db"
+    networks: 
+      - mynetwork
+
+  mysqldb:
+    image : mysql:5.7.25
+    ports:
+      - "3307:3306"
+    volumes:
+      - "./data/sql:/data"
+
+  apibox:
+    image: node:8-alpine
+    ports:
+      - "3000:3000"
+    volumes:
+      - "./src/api:/api"
+    depends_on:
+      - mongodb
+      - mysqldb
+    networks:
+      mynetwork:
+        aliases:
+          - api.myapp.com
+
+  frontend:
+    build:
+      context: .
+      dockerfile: "./dockerfiles/frontend.dockerfile"
+    ports:
+      - "4200:4200"
+    volumes:
+      - "./src/frontend:/frontend"
+    depends_on:
+      - mongodb
+      - mysqld
+      - apibox
+    networks:
+      mynetwork:
+        aliases:
+          - front.myapp.com
+
+networks:
+  mynetwork:
+    driver: "bridge"
